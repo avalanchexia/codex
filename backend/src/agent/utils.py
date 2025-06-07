@@ -1,5 +1,38 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Callable, Any as TypingAny
 from langchain_core.messages import AnyMessage, AIMessage, HumanMessage
+import concurrent.futures
+
+
+def run_with_timeout(
+    func: Callable[..., TypingAny], *args: TypingAny, timeout: int = 30, **kwargs: TypingAny
+) -> TypingAny:
+    """Execute ``func`` and raise ``TimeoutError`` if it takes too long.
+
+    Parameters
+    ----------
+    func : Callable
+        The function to execute.
+    timeout : int, optional
+        Timeout in seconds, by default 30.
+    *args, **kwargs :
+        Arguments forwarded to ``func``.
+
+    Returns
+    -------
+    Any
+        The result of ``func``.
+
+    Raises
+    ------
+    TimeoutError
+        If ``func`` does not finish within ``timeout`` seconds.
+    """
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(func, *args, **kwargs)
+        try:
+            return future.result(timeout=timeout)
+        except concurrent.futures.TimeoutError as exc:  # pragma: no cover - network failures
+            raise TimeoutError(f"Operation timed out after {timeout}s") from exc
 
 
 def get_research_topic(messages: List[AnyMessage]) -> str:

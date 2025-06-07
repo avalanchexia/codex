@@ -29,6 +29,7 @@ from agent.utils import (
     get_research_topic,
     insert_citation_markers,
     resolve_urls,
+    run_with_timeout,
 )
 
 load_dotenv()
@@ -76,8 +77,8 @@ def generate_query(state: OverallState, config: RunnableConfig) -> QueryGenerati
         research_topic=get_research_topic(state["messages"]),
         number_queries=state["initial_search_query_count"],
     )
-    # Generate the search queries
-    result = structured_llm.invoke(formatted_prompt)
+    # Generate the search queries with a timeout to avoid hanging
+    result = run_with_timeout(structured_llm.invoke, formatted_prompt)
     return {"query_list": result.query}
 
 
@@ -112,7 +113,8 @@ def web_research(state: WebSearchState, config: RunnableConfig) -> OverallState:
     )
 
     # Uses the google genai client as the langchain client doesn't return grounding metadata
-    response = genai_client.models.generate_content(
+    response = run_with_timeout(
+        genai_client.models.generate_content,
         model=configurable.query_generator_model,
         contents=formatted_prompt,
         config={
@@ -169,7 +171,9 @@ def reflection(state: OverallState, config: RunnableConfig) -> ReflectionState:
         max_retries=2,
         api_key=os.getenv("GEMINI_API_KEY"),
     )
-    result = llm.with_structured_output(Reflection).invoke(formatted_prompt)
+    result = run_with_timeout(
+        llm.with_structured_output(Reflection).invoke, formatted_prompt
+    )
 
     return {
         "is_sufficient": result.is_sufficient,
@@ -248,7 +252,7 @@ def finalize_answer(state: OverallState, config: RunnableConfig):
         max_retries=2,
         api_key=os.getenv("GEMINI_API_KEY"),
     )
-    result = llm.invoke(formatted_prompt)
+    result = run_with_timeout(llm.invoke, formatted_prompt)
 
     # Replace the short urls with the original urls and add all used urls to the sources_gathered
     unique_sources = []

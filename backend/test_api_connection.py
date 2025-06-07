@@ -16,6 +16,9 @@ def test_environment_variables():
     
     load_dotenv()
     
+    # 禁用 LangSmith 追踪
+    os.environ["LANGCHAIN_TRACING_V2"] = "false"
+    
     gemini_api_key = os.getenv("GEMINI_API_KEY")
     if not gemini_api_key:
         print("❌ GEMINI_API_KEY 未设置")
@@ -55,6 +58,9 @@ def test_langchain_gemini():
     print("\n=== 测试 LangChain Gemini 集成 ===")
     
     try:
+        # 禁用 LangSmith 追踪
+        os.environ["LANGCHAIN_TRACING_V2"] = "false"
+        
         llm = ChatGoogleGenerativeAI(
             model="gemini-2.0-flash-exp",
             temperature=0,

@@ -7,7 +7,7 @@ start "Frontend Dev Server" cmd /k "cd frontend && npm run dev"
 
 echo.
 echo Starting backend development server...
-start "Backend Dev Server" cmd /k "cd backend && set GEMINI_API_KEY=placeholder && python -m langgraph_cli dev --allow-blocking"
+start "Backend Dev Server" cmd /k "cd backend && set GEMINI_API_KEY=AIzaSyCB2cI-2SYqvtuLQJoc7FXhMK7I0nkpBDk && python -m langgraph_cli dev --allow-blocking"
 
 echo.
 echo Development servers are starting...

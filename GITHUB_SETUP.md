@@ -25,10 +25,26 @@ git remote -v
 #### 步骤3：推送到您的仓库
 
 ```powershell
-# 推送到您的GitHub仓库
+# 推送所有提交到您的仓库
 git push origin main
+```
 
-# 如果遇到权限问题，可能需要先设置GitHub认证
+### 🔐 如果遇到认证问题
+
+如果推送时遇到认证问题，您需要设置GitHub认证：
+
+**方法1：使用Personal Access Token**
+1. 访问 GitHub Settings → Developer settings → Personal access tokens
+2. 生成新的token，选择 `repo` 权限
+3. 推送时使用：
+```powershell
+git push https://YOUR_USERNAME:YOUR_TOKEN@github.com/YOUR_USERNAME/gemini-fullstack-langgraph-quickstart.git main
+```
+
+**方法2：使用GitHub CLI（如果已安装）**
+```powershell
+gh auth login
+git push origin main
 ```
 
 ### 方法2：创建全新仓库

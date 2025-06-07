@@ -53,7 +53,7 @@ timeout /t 5 /nobreak >nul
 
 echo.
 echo 5. 启动后端开发服务器...
-start "Backend - 后端服务器" cmd /k "cd /d %~dp0backend && echo 启动后端服务器... && set GEMINI_API_KEY=placeholder && python -m langgraph_cli dev --allow-blocking"
+start "Backend - 后端服务器" cmd /k "cd /d %~dp0backend && echo 启动后端服务器... && set GEMINI_API_KEY=AIzaSyCB2cI-2SYqvtuLQJoc7FXhMK7I0nkpBDk && python -m langgraph_cli dev --allow-blocking"
 
 echo.
 echo ========================================
@@ -65,7 +65,7 @@ echo ========================================
 echo.
 echo 注意：
 echo 1. 如果看到错误，请检查对应的服务器窗口
-echo 2. 要获得完整功能，需要设置真实的 GEMINI_API_KEY
+echo 2. 已设置真实的 GEMINI_API_KEY，功能完整可用
 echo 3. 关闭时请关闭所有打开的服务器窗口
 echo.
 pause 

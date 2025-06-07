@@ -1,7 +1,15 @@
 import os
+import logging
 
 from agent.tools_and_schemas import SearchQueryList, Reflection
 from dotenv import load_dotenv
+
+# 配置日志记录
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 from langchain_core.messages import AIMessage
 from langgraph.types import Send
 from langgraph.graph import StateGraph
@@ -34,8 +42,17 @@ from agent.utils import (
 
 load_dotenv()
 
-if os.getenv("GEMINI_API_KEY") is None:
+# 检查必需的环境变量
+gemini_api_key = os.getenv("GEMINI_API_KEY")
+if gemini_api_key is None:
+    logger.error("GEMINI_API_KEY 环境变量未设置")
     raise ValueError("GEMINI_API_KEY is not set")
+else:
+    logger.info("GEMINI_API_KEY 已正确设置")
+
+# 检查 API 密钥格式
+if not gemini_api_key.startswith("AIza"):
+    logger.warning("GEMINI_API_KEY 格式可能不正确，应以 'AIza' 开头")
 
 # Used for Google Search API
 genai_client = Client(api_key=os.getenv("GEMINI_API_KEY"))
@@ -78,8 +95,17 @@ def generate_query(state: OverallState, config: RunnableConfig) -> QueryGenerati
         number_queries=state["initial_search_query_count"],
     )
     # Generate the search queries with a timeout to avoid hanging
-    result = run_with_timeout(structured_llm.invoke, formatted_prompt)
-    return {"query_list": result.query}
+    try:
+        logger.info("开始生成搜索查询...")
+        result = run_with_timeout(structured_llm.invoke, formatted_prompt)
+        logger.info(f"成功生成 {len(result.query)} 个搜索查询")
+        return {"query_list": result.query}
+    except TimeoutError as e:
+        logger.error(f"生成搜索查询超时: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"生成搜索查询时发生错误: {e}")
+        raise
 
 
 def continue_to_web_research(state: QueryGenerationState):
@@ -113,15 +139,24 @@ def web_research(state: WebSearchState, config: RunnableConfig) -> OverallState:
     )
 
     # Uses the google genai client as the langchain client doesn't return grounding metadata
-    response = run_with_timeout(
-        genai_client.models.generate_content,
-        model=configurable.query_generator_model,
-        contents=formatted_prompt,
-        config={
-            "tools": [{"google_search": {}}],
-            "temperature": 0,
-        },
-    )
+    try:
+        logger.info(f"开始网络搜索，查询: {state['search_query']}")
+        response = run_with_timeout(
+            genai_client.models.generate_content,
+            model=configurable.query_generator_model,
+            contents=formatted_prompt,
+            config={
+                "tools": [{"google_search": {}}],
+                "temperature": 0,
+            },
+        )
+        logger.info("网络搜索完成")
+    except TimeoutError as e:
+        logger.error(f"网络搜索超时: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"网络搜索时发生错误: {e}")
+        raise
     # resolve the urls to short urls for saving tokens and time
     resolved_urls = resolve_urls(
         response.candidates[0].grounding_metadata.grounding_chunks, state["id"]

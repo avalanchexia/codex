@@ -1,41 +1,66 @@
 volumes:
   langgraph-data:
     driver: local
+  langgraph-redis-data:
+
+networks:
+  langgraph-network:
+    driver: bridge
+
 services:
   langgraph-redis:
     image: docker.io/redis:6
+    container_name: langgraph-redis
+    ports:
+      - "6381:6379"
+    volumes:
+      - langgraph-redis-data:/data
+    networks:
+      - langgraph-network
     healthcheck:
       test: redis-cli ping
       interval: 5s
       timeout: 1s
       retries: 5
+    restart: unless-stopped
+
   langgraph-postgres:
     image: docker.io/postgres:16
+    container_name: langgraph-postgres
     ports:
-      - "5433:5432"
+      - "5434:5432"
     environment:
-      POSTGRES_DB: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: langgraph
+      POSTGRES_USER: langgraph
+      POSTGRES_PASSWORD: langgraph123
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
     volumes:
       - langgraph-data:/var/lib/postgresql/data
+    networks:
+      - langgraph-network
     healthcheck:
-      test: pg_isready -U postgres
+      test: pg_isready -U langgraph -d langgraph
       start_period: 10s
       timeout: 1s
       retries: 5
       interval: 5s
+    restart: unless-stopped
+
   langgraph-api:
     image: gemini-fullstack-langgraph
+    container_name: langgraph-api
     ports:
-      - "8123:8000"
+      - "2024:8000"
     depends_on:
       langgraph-redis:
         condition: service_healthy
       langgraph-postgres:
         condition: service_healthy
+    env_file:
+      - docker.env
     environment:
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
-      LANGSMITH_API_KEY: ${LANGSMITH_API_KEY}
       REDIS_URI: redis://langgraph-redis:6379
-      POSTGRES_URI: postgres://postgres:postgres@langgraph-postgres:5432/postgres?sslmode=disable
+      POSTGRES_URI: postgres://langgraph:langgraph123@langgraph-postgres:5432/langgraph?sslmode=disable
+    networks:
+      - langgraph-network
+    restart: unless-stopped
